@@ -1,0 +1,302 @@
+import { useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/data-table/data-table";
+import { Button } from "@/components/ui/button";
+import { Icons } from "@/components/icons";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogDescription,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+  SheetClose
+} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { toast } from "sonner";
+
+type DailyReport = {
+  id: string;
+  date: string;
+  employee: string;
+  project: string;
+  hours: number;
+  status: "Pending" | "Approved" | "Rejected";
+};
+
+const dummyReports: DailyReport[] = [
+  {
+    id: "DWR-001",
+    date: "2024-05-24",
+    employee: "Alice Johnson",
+    project: "Website Redesign",
+    hours: 8,
+    status: "Pending",
+  },
+  {
+    id: "DWR-002",
+    date: "2024-05-24",
+    employee: "Bob Smith",
+    project: "Mobile App MVP",
+    hours: 7.5,
+    status: "Approved",
+  },
+  {
+    id: "DWR-003",
+    date: "2024-05-23",
+    employee: "Charlie Davis",
+    project: "CRM Integration",
+    hours: 8,
+    status: "Approved",
+  },
+  {
+    id: "DWR-004",
+    date: "2024-05-23",
+    employee: "Alice Johnson",
+    project: "Website Redesign",
+    hours: 4,
+    status: "Rejected",
+  },
+];
+
+export default function DailyReportsPage() {
+  const [openCreate, setOpenCreate] = useState(false);
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("Daily Work Report submitted for review");
+    setOpenCreate(false);
+  };
+
+  const columns = useMemo<ColumnDef<DailyReport>[]>(() => [
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.date}</span>
+      )
+    },
+    {
+      accessorKey: "employee",
+      header: "Employee",
+    },
+    {
+      accessorKey: "project",
+      header: "Project",
+    },
+    {
+      accessorKey: "hours",
+      header: "Logged Hours",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Icons.fileClock className="h-4 w-4 text-muted-foreground" />
+          <span>{row.original.hours} hrs</span>
+        </div>
+      )
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.original.status;
+        let variant: "default" | "secondary" | "destructive" | "outline" = "secondary";
+        
+        if (status === "Approved") variant = "default";
+        if (status === "Rejected") variant = "destructive";
+        if (status === "Pending") variant = "secondary";
+
+        return (
+          <Badge variant={variant} className={
+            status === "Approved" ? "bg-green-500 hover:bg-green-600" : 
+            status === "Pending" ? "bg-orange-100 text-orange-800 hover:bg-orange-200" : ""
+          }>
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const report = row.original;
+        return (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <span className="sr-only">View Details</span>
+                <Icons.eye className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Report Details ({report.id})</DialogTitle>
+                <DialogDescription>Submitted by {report.employee} on {report.date}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-semibold text-muted-foreground">Project</span>
+                    <p>{report.project}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-muted-foreground">Hours Logged</span>
+                    <p>{report.hours} hrs</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-muted-foreground">Status</span>
+                    <div>
+                      <Badge variant={report.status === "Approved" ? "default" : report.status === "Rejected" ? "destructive" : "secondary"}>
+                        {report.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-sm">
+                  <span className="font-semibold text-muted-foreground">Tasks Worked On</span>
+                  <div className="p-3 bg-muted rounded-md mt-1 whitespace-pre-wrap">
+                    - Built navigation bar
+                    - Fixed layout bugs
+                  </div>
+                </div>
+                <div className="text-sm">
+                  <span className="font-semibold text-muted-foreground">Tomorrow's Plan</span>
+                  <div className="p-3 bg-muted rounded-md mt-1">
+                    Will continue with the API integration and write tests.
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Close</Button>
+                </DialogClose>
+                {report.status === "Pending" && (
+                  <>
+                    <Button variant="destructive">Reject</Button>
+                    <Button>Approve</Button>
+                  </>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      },
+    }
+  ], []);
+
+  return (
+    <div className="flex flex-col space-y-4 h-full">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Daily Work Reports</h2>
+          <p className="text-muted-foreground text-sm">Review team productivity and approve reports.</p>
+        </div>
+        
+        <Sheet open={openCreate} onOpenChange={setOpenCreate}>
+          <SheetTrigger asChild>
+            <Button>
+              <Icons.add className="mr-2 h-4 w-4" />
+              Log Work
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-full sm:max-w-xl md:max-w-2xl overflow-y-auto p-0">
+            <SheetHeader className="px-6 py-4 border-b">
+              <SheetTitle>Log Daily Work</SheetTitle>
+              <SheetDescription>Submit your daily work report for approval.</SheetDescription>
+            </SheetHeader>
+            <form onSubmit={onSubmit} className="space-y-5 p-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date <span className="text-red-500">*</span></Label>
+                  <Input id="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hours">Hours Logged <span className="text-red-500">*</span></Label>
+                  <Input id="hours" type="number" step="0.5" placeholder="e.g. 8" required />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project">Project <span className="text-red-500">*</span></Label>
+                <Select required>
+                  <SelectTrigger id="project">
+                    <SelectValue placeholder="Select project you worked on" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="prj1">Website Redesign</SelectItem>
+                    <SelectItem value="prj2">Mobile App MVP</SelectItem>
+                    <SelectItem value="prj3">CRM Integration</SelectItem>
+                    <SelectItem value="internal">Internal/Bench</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tasks">Tasks Worked On <span className="text-red-500">*</span></Label>
+                <Textarea 
+                  id="tasks" 
+                  placeholder="- Built navigation bar&#10;- Fixed layout bugs" 
+                  className="min-h-[100px]" 
+                  required 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="blockers">Blockers / Issues</Label>
+                <Textarea 
+                  id="blockers" 
+                  placeholder="Any dependencies or issues blocking your progress?" 
+                  className="min-h-[80px]" 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="plan">Tomorrow's Plan</Label>
+                <Input id="plan" placeholder="Briefly state what you will work on tomorrow." />
+              </div>
+              
+              <SheetFooter className="mt-8 pt-4 border-t flex-row justify-end space-x-2">
+                <SheetClose asChild>
+                  <Button variant="outline" type="button">Cancel</Button>
+                </SheetClose>
+                <Button type="submit">Submit Report</Button>
+              </SheetFooter>
+            </form>
+          </SheetContent>
+        </Sheet>
+
+      </div>
+
+      <div className="bg-card rounded-xl border shadow-sm p-4">
+        <DataTable 
+          columns={columns} 
+          data={dummyReports} 
+          gridCount={dummyReports.length} 
+          toolbar={true}
+          searchKey="employee"
+        />
+      </div>
+    </div>
+  );
+}
