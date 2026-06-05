@@ -131,7 +131,7 @@ const UserActionsCell = ({ row, onRefresh }: { row: any; onRefresh: () => void }
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">ADMIN</SelectItem>
-                  <SelectItem value="MANAGER">MANAGER</SelectItem>
+                  <SelectItem value="HR">HR</SelectItem>
                   <SelectItem value="TEAM_MEMBER">TEAM MEMBER</SelectItem>
                   <SelectItem value="CLIENT">CLIENT</SelectItem>
                 </SelectContent>
@@ -363,7 +363,7 @@ export default function AdminUsersPage() {
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"ADMIN" | "MANAGER" | "TEAM_MEMBER" | "CLIENT">("TEAM_MEMBER");
+  const [newUserRole, setNewUserRole] = useState<"ADMIN" | "HR" | "TEAM_MEMBER" | "CLIENT">("TEAM_MEMBER");
   const [newUserLoading, setNewUserLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("users");
 
@@ -478,8 +478,9 @@ export default function AdminUsersPage() {
       header: () => t("users.labelRole", "Role"),
       cell: ({ row }) => {
         const user = row.original;
-        let badgeVariant: "red" | "orange" | "blue" | "green" = "blue";
+        let badgeVariant: "red" | "orange" | "blue" | "green" | "purple" = "blue";
         if (user.role === "ADMIN") badgeVariant = "red";
+        else if (user.role === "HR") badgeVariant = "purple";
         else if (user.role === "MANAGER") badgeVariant = "orange";
         else if (user.role === "CLIENT") badgeVariant = "green";
 
@@ -738,7 +739,7 @@ export default function AdminUsersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">ADMIN</SelectItem>
-                  <SelectItem value="MANAGER">MANAGER</SelectItem>
+                  <SelectItem value="HR">HR</SelectItem>
                   <SelectItem value="TEAM_MEMBER">TEAM MEMBER</SelectItem>
                   <SelectItem value="CLIENT">CLIENT</SelectItem>
                 </SelectContent>

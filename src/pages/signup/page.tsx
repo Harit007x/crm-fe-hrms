@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // ---------------------- Zod Schema ----------------------
 
@@ -33,6 +34,8 @@ const SignupSchema = z.object({
     .string()
     .min(1, "Password is required")
     .min(6, "Password must be at least 6 characters"),
+
+  role: z.enum(["TEAM_MEMBER", "HR"]),
 });
 
 type SignupFormValues = z.infer<typeof SignupSchema>;
@@ -48,9 +51,13 @@ export default function SignupPage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(SignupSchema),
+    defaultValues: {
+      role: "TEAM_MEMBER",
+    },
   });
 
   // ---------------------- Submit ----------------------
@@ -60,10 +67,10 @@ export default function SignupPage() {
 
     try {
       const name = `${values.firstName} ${values.lastName}`;
-      const response = await authService.signup(name, values.email, values.password);
+      const response = await authService.signup(name, values.email, values.password, values.role);
 
       if (response.success && response.data) {
-        setAuth(response.data, response.accessToken || null);
+        setAuth(response.data as any, response.accessToken || null);
         toast.success("Account created successfully!");
         navigate("/admin/dashboard");
       } else {
@@ -164,6 +171,34 @@ export default function SignupPage() {
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-500">{errors.phone.message}</p>
+                )}
+              </div>
+
+              {/* Role */}
+
+              <div className="flex flex-col gap-1">
+                <Label>{t("signup.role", "Role")}</Label>
+                <Controller
+                  name="role"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TEAM_MEMBER">Employee</SelectItem>
+                        <SelectItem value="HR">HR Manager</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.role && (
+                  <p className="text-sm text-red-500">{errors.role.message}</p>
                 )}
               </div>
 

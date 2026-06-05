@@ -1,9 +1,27 @@
 import SideNav from "@/components/side-nav";
 import { Icons } from "@/components/icons";
 import type { SideNavbar } from "@/utils/types";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { useAuthStore } from "@/store/auth-store";
+
 export default function AdminLayout() {
-  const adminNavItems: SideNavbar[] = [
+  const { user, logout } = useAuthStore();
+  const role = user?.role || "TEAM_MEMBER";
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (role === "ADMIN" || role === "CLIENT") {
+      logout();
+      toast.error("Access Denied: Admin and Client accounts cannot access the HRMS portal.");
+      navigate("/login");
+    } else if (role === "HR") {
+      navigate("/hr/dashboard");
+    }
+  }, [role, logout, navigate]);
+
+  const navItems: SideNavbar[] = [
     {
       title: "Overview",
       items: [
@@ -11,11 +29,6 @@ export default function AdminLayout() {
           title: "Dashboard",
           path: "/admin/dashboard",
           icon: <Icons.home className="w-5 h-5" />,
-        },
-        {
-          title: "Analytics",
-          path: "/admin/analytics",
-          icon: <Icons.barChart2 className="w-5 h-5" />,
         },
       ],
     },
@@ -32,16 +45,16 @@ export default function AdminLayout() {
           path: "/admin/tasks/board",
           icon: <Icons.clipboardCheck className="w-5 h-5" />,
         },
-        {
-          title: "Proposals",
-          path: "/admin/proposals",
-          icon: <Icons.post className="w-5 h-5" />,
-        },
       ],
     },
     {
-      title: "Operations",
+      title: "HR Services",
       items: [
+        {
+          title: "Leave Apply",
+          path: "/admin/leave-apply",
+          icon: <Icons.post className="w-5 h-5" />,
+        },
         {
           title: "Daily Reports",
           path: "/admin/daily-reports",
@@ -53,20 +66,24 @@ export default function AdminLayout() {
           icon: <Icons.billing className="w-5 h-5" />,
         },
         {
-          title: "Invoices",
-          path: "/admin/invoices",
-          icon: <Icons.scrollText className="w-5 h-5" />,
+          title: "Events",
+          path: "/admin/events",
+          icon: <Icons.calender className="w-5 h-5" />,
         },
       ],
     },
     {
       title: "Organization",
       items: [
-        {
-          title: "Users & Teams",
-          path: "/admin/users",
-          icon: <Icons.users className="w-5 h-5" />,
-        },
+        ...(role === "MANAGER"
+          ? [
+              {
+                title: "Users & Teams",
+                path: "/admin/users",
+                icon: <Icons.users className="w-5 h-5" />,
+              },
+            ]
+          : []),
         {
           title: "Files",
           path: "/admin/files",
@@ -79,10 +96,10 @@ export default function AdminLayout() {
         },
       ],
     },
-  ];
+  ].filter((category) => category.items.length > 0);
 
   return (
-    <SideNav navBar={adminNavItems}>
+    <SideNav navBar={navItems}>
       <div className="max-w-7xl mx-auto w-full">
         <Outlet />
       </div>

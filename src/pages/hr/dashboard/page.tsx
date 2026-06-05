@@ -1,28 +1,16 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import type { ChartConfig } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { useTranslation } from "react-i18next";
+import { useEffect, useState, useCallback } from "react";
 import { Icons } from "@/components/icons";
-import { useAuthStore } from "@/store/auth-store";
-import { Badge } from "@/components/ui/badge";
+import { userService } from "@/services/user.service";
+import { leaveService } from "@/services/leave.service";
+import { holidayService } from "@/services/holiday.service";
 import { attendanceService, type MonthlySummary, type AttendanceRecord } from "@/services/attendance.service";
-import { leaveService, type LeaveRecord } from "@/services/leave.service";
-import { expenseService, type Expense } from "@/services/expense.service";
 import { taskService } from "@/services/task.service";
-import { dailyReportService } from "@/services/dailyReport.service";
+import { useAuthStore } from "@/store/auth-store";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 function formatTime(isoString: string | null): string {
   if (!isoString) return "--:--";
@@ -46,13 +34,6 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-const hoursChartConfig = {
-  hours: {
-    label: "Hours Worked",
-    color: "var(--chart-1)",
-  },
-} satisfies ChartConfig;
-
 type EmployeeTask = {
   id: string;
   taskName: string;
@@ -62,37 +43,51 @@ type EmployeeTask = {
   status: "To Do" | "In Progress" | "Completed" | string;
 };
 
-export default function DashboardPage() {
+export default function HRDashboardPage() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
+  
+  // HR Stats
+  const [stats, setStats] = useState({
+    employees: 0,
+    pendingLeaves: 0,
+    upcomingHolidays: 0,
+  });
+  
+  // Employee Stats (Personal)
   const [attendanceSummary, setAttendanceSummary] = useState<MonthlySummary | null>(null);
-
   const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
   const [elapsedTime, setElapsedTime] = useState("00:00:00");
   const [punchLoading, setPunchLoading] = useState(false);
-  const [myLeaves, setMyLeaves] = useState<LeaveRecord[]>([]);
-  const [, setMyExpenses] = useState<Expense[]>([]);
-  const [hrEvents, setHrEvents] = useState<{
-    id: string;
-    type: "Leave" | "Expense";
-    title: string;
-    date: string;
-    status: string;
-    description: string;
-    color: string;
-    link: string;
-  }[]>([]);
-  
   const [employeeTasks, setEmployeeTasks] = useState<EmployeeTask[]>([]);
-  const [workHoursData, setWorkHoursData] = useState<{day: string, hours: number}[]>([
-    { day: "Mon", hours: 0 },
-    { day: "Tue", hours: 0 },
-    { day: "Wed", hours: 0 },
-    { day: "Thu", hours: 0 },
-    { day: "Fri", hours: 0 },
-  ]);
+  const [loading, setLoading] = useState(true);
 
   const isPunchedIn = todayRecord && !todayRecord.punchOut;
   const isPunchedOut = todayRecord && todayRecord.punchOut;
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const [users, leaves, holidays] = await Promise.all([
+        userService.getAllUsers(),
+        leaveService.getAllLeaves(),
+        holidayService.getHolidays(),
+      ]);
+
+      const activeEmployees = users.filter((u) => u.role !== "CLIENT").length;
+      const pending = leaves.filter((l) => l.status === "Pending").length;
+      
+      const now = new Date();
+      const upcoming = holidays.filter((h) => new Date(h.date) >= now).length;
+
+      setStats({
+        employees: activeEmployees,
+        pendingLeaves: pending,
+        upcomingHolidays: upcoming,
+      });
+    } catch (error) {
+      console.error("Error fetching HR dashboard data:", error);
+    }
+  }, []);
 
   const fetchTodayStatus = useCallback(async () => {
     try {
@@ -113,56 +108,9 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const fetchEmployeeUpdates = useCallback(async () => {
-    try {
-      const [leaveRecords, expenseRecords] = await Promise.all([
-        leaveService.getMyLeaves(),
-        expenseService.getAllExpenses(),
-      ]);
-
-      const filteredExpenses = expenseRecords.filter((expense) => {
-        if (!user) return true;
-        return expense.submittedById === user.id || expense.submittedBy?.id === user.id;
-      });
-
-      setMyLeaves(leaveRecords);
-      setMyExpenses(filteredExpenses);
-
-      const events = [
-        ...leaveRecords.map((leave) => ({
-          id: `leave-${leave.id}`,
-          type: "Leave" as const,
-          title: `${leave.leaveType} Leave`,
-          date: leave.startDate,
-          status: leave.status,
-          description: `${leave.duration} day(s) • ${new Date(leave.startDate).toLocaleDateString()} - ${new Date(leave.endDate).toLocaleDateString()}`,
-          color: leave.status === "Approved" ? "bg-emerald-500" : leave.status === "Rejected" ? "bg-rose-500" : "bg-amber-500",
-          link: "/admin/leave-apply",
-        })),
-        ...filteredExpenses.map((expense) => ({
-          id: `expense-${expense.id}`,
-          type: "Expense" as const,
-          title: `${expense.category} Expense`,
-          date: expense.date,
-          status: expense.status,
-          description: `$${expense.amount.toFixed(2)} • ${expense.description}`,
-          color: expense.status === "Approved" ? "bg-emerald-500" : expense.status === "Rejected" ? "bg-rose-500" : "bg-amber-500",
-          link: "/admin/expenses",
-        })),
-      ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-      setHrEvents(events);
-    } catch (error) {
-      console.error("Failed to fetch employee updates:", error);
-    }
-  }, [user]);
-
   const fetchEmployeeWork = useCallback(async () => {
     try {
-      const [tasks, reports] = await Promise.all([
-        taskService.getAllTasks(),
-        dailyReportService.getMyReports(),
-      ]);
+      const tasks = await taskService.getAllTasks();
 
       const myTasks = tasks.filter((t) => t.assigneeId === user?.id).map((t) => {
         let mappedStatus = "To Do";
@@ -180,36 +128,24 @@ export default function DashboardPage() {
         };
       });
       setEmployeeTasks(myTasks);
-
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      const hoursMap = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
-      
-      reports.forEach(report => {
-        const date = new Date(report.date);
-        const dayName = days[date.getDay()];
-        if (hoursMap[dayName as keyof typeof hoursMap] !== undefined) {
-           hoursMap[dayName as keyof typeof hoursMap] += report.hours;
-        }
-      });
-
-      setWorkHoursData([
-        { day: "Mon", hours: hoursMap["Mon"] },
-        { day: "Tue", hours: hoursMap["Tue"] },
-        { day: "Wed", hours: hoursMap["Wed"] },
-        { day: "Thu", hours: hoursMap["Thu"] },
-        { day: "Fri", hours: hoursMap["Fri"] },
-      ]);
     } catch (error) {
       console.error("Failed to fetch employee work", error);
     }
   }, [user]);
 
   useEffect(() => {
-    fetchTodayStatus();
-    fetchMonthlySummary();
-    fetchEmployeeUpdates();
-    fetchEmployeeWork();
-  }, [fetchTodayStatus, fetchMonthlySummary, fetchEmployeeUpdates, fetchEmployeeWork]);
+    const loadAll = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchDashboardData(),
+        fetchTodayStatus(),
+        fetchMonthlySummary(),
+        fetchEmployeeWork()
+      ]);
+      setLoading(false);
+    };
+    loadAll();
+  }, [fetchDashboardData, fetchTodayStatus, fetchMonthlySummary, fetchEmployeeWork]);
 
   // Live timer when punched in
   useEffect(() => {
@@ -223,18 +159,6 @@ export default function DashboardPage() {
 
     return () => clearInterval(interval);
   }, [isPunchedIn, todayRecord]);
-
-  const upcomingEvents = useMemo(
-    () => hrEvents.filter((event) => new Date(event.date).getTime() >= new Date().setHours(0, 0, 0, 0)),
-    [hrEvents]
-  );
-
-  const pendingApprovals = useMemo(
-    () => hrEvents.filter((event) => event.status === "Pending").length,
-    [hrEvents]
-  );
-
-  const leaveCount = useMemo(() => myLeaves.length, [myLeaves]);
 
   const handlePunchIn = async () => {
     setPunchLoading(true);
@@ -275,61 +199,61 @@ export default function DashboardPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-col align-start space-y-4 h-full">
-      <div className="flex">
-        <h2 className="inline-block text-2xl justify-self-start font-bold tracking-tight">
-          Employee Dashboard
-        </h2>
+    <div className="space-y-6 animate-in fade-in duration-500 pb-8">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">HR Dashboard</h2>
+        <p className="text-muted-foreground">Overview of human resources metrics and your personal tracking.</p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:bg-secondary/50 cursor-pointer rounded-xl transition-colors border-border/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Leaves</CardTitle>
-            <Icons.calender className="h-4 w-4 text-sky-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{leaveCount}</div>
-            <p className="text-xs text-muted-foreground">Active leave requests</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Employees */}
+        <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+          <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="tracking-tight text-sm font-medium">Total Employees</h3>
+            <Icons.users className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="p-6 pt-0">
+            <div className="text-2xl font-bold">{stats.employees}</div>
+            <p className="text-xs text-muted-foreground">Active staff members</p>
+          </div>
+        </div>
 
-        <Card className="hover:bg-secondary/50 cursor-pointer rounded-xl transition-colors border-border/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-            <Icons.warning className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingApprovals}</div>
-            <p className="text-xs text-muted-foreground">Leave & expense updates waiting for review</p>
-          </CardContent>
-        </Card>
+        {/* Pending Leaves */}
+        <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+          <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="tracking-tight text-sm font-medium">Leave Requests</h3>
+            <Icons.clipboardCheck className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="p-6 pt-0">
+            <div className="text-2xl font-bold">{stats.pendingLeaves}</div>
+            <p className="text-xs text-muted-foreground">Pending approvals</p>
+          </div>
+        </div>
 
-        <Card className="hover:bg-secondary/50 cursor-pointer rounded-xl transition-colors border-border/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Logged Hours</CardTitle>
-            <Icons.fileClock className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{attendanceSummary?.totalHours?.toFixed(1) || 0} hrs</div>
-            <p className="text-xs text-muted-foreground">{attendanceSummary?.presentDays || 0} days present</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:bg-secondary/50 cursor-pointer rounded-xl transition-colors border-border/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-            <Icons.calender className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{upcomingEvents.length}</div>
-            <p className="text-xs text-muted-foreground">Upcoming HR updates on your calendar</p>
-          </CardContent>
-        </Card>
+        {/* Upcoming Holidays */}
+        <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+          <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="tracking-tight text-sm font-medium">Upcoming Holidays</h3>
+            <Icons.calender className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="p-6 pt-0">
+            <div className="text-2xl font-bold">{stats.upcomingHolidays}</div>
+            <p className="text-xs text-muted-foreground">In the future</p>
+          </div>
+        </div>
       </div>
 
+      <h3 className="text-xl font-bold tracking-tight pt-4">My Dashboard</h3>
+      
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Punch Card */}
         <Card className="lg:col-span-1 rounded-xl border-border/50 shadow-sm overflow-hidden">
@@ -418,7 +342,7 @@ export default function DashboardPage() {
         {/* Monthly Summary Cards */}
         <Card className="lg:col-span-2 rounded-xl border-border/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Monthly Summary</CardTitle>
+            <CardTitle className="text-lg">My Monthly Summary</CardTitle>
             <CardDescription>
               {MONTH_NAMES[new Date().getMonth()]} {new Date().getFullYear()} attendance overview
             </CardDescription>
@@ -457,23 +381,6 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader>
-            <CardTitle>Work Hours This Week</CardTitle>
-            <CardDescription>Track weekly logged hours for your active days.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[270px]">
-            <ChartContainer config={hoursChartConfig} className="h-full w-full">
-              <BarChart data={workHoursData} className="h-full w-full">
-                <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.5} />
-                <XAxis dataKey="day" tickLine={false} axisLine={false} />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                <Bar dataKey="hours" fill="var(--color-hours)" radius={4} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border-border/50 shadow-sm">
-          <CardHeader>
             <CardTitle>My Tasks</CardTitle>
             <CardDescription>Tasks currently assigned to you.</CardDescription>
           </CardHeader>
@@ -489,6 +396,11 @@ export default function DashboardPage() {
                 </Badge>
               </div>
             ))}
+            {employeeTasks.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                No tasks assigned to you.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

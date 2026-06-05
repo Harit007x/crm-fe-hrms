@@ -7,6 +7,7 @@ export interface AuthResponse {
     id: string;
     name: string;
     email: string;
+    role: "ADMIN" | "MANAGER" | "TEAM_MEMBER" | "CLIENT";
   };
   accessToken?: string;
 }
@@ -17,8 +18,8 @@ export const authService = {
     return response.data;
   },
 
-  signup: async (name: string, email: string, password: string): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>("/auth/signup", { name, email, password });
+  signup: async (name: string, email: string, password: string, role?: string): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>("/auth/signup", { name, email, password, role });
     return response.data;
   },
 

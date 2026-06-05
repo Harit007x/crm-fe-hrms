@@ -37,9 +37,12 @@ import { toast } from "sonner";
 import { expenseService, type Expense } from "@/services/expense.service";
 import { projectService, type Project } from "@/services/project.service";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function ExpensesPage() {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const role = user?.role || "TEAM_MEMBER";
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -377,13 +380,13 @@ export default function ExpensesPage() {
                   <DialogClose asChild>
                     <Button variant="outline">Close</Button>
                   </DialogClose>
-                  {selectedExpense.status === "Pending" && (
+                  {selectedExpense.status === "Pending" && role !== "TEAM_MEMBER" && (
                     <>
                       <Button variant="destructive" onClick={() => handleUpdateStatus(selectedExpense.id, "Rejected")}>Reject</Button>
                       <Button onClick={() => handleUpdateStatus(selectedExpense.id, "Approved")}>Approve</Button>
                     </>
                   )}
-                  {selectedExpense.status === "Approved" && (
+                  {selectedExpense.status === "Approved" && role !== "TEAM_MEMBER" && (
                     <Button className="bg-blue text-white hover:bg-blue/90" onClick={() => handleUpdateStatus(selectedExpense.id, "Reimbursed")}>Mark as Reimbursed</Button>
                   )}
                 </DialogFooter>

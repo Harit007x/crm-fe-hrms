@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
@@ -36,57 +36,73 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-type DailyReport = {
-  id: string;
-  date: string;
-  employee: string;
-  project: string;
-  hours: number;
-  status: "Pending" | "Approved" | "Rejected";
-};
+import { dailyReportService, type DailyReport } from "@/services/dailyReport.service";
+import { projectService, type Project } from "@/services/project.service";
+import { useAuthStore } from "@/store/auth-store";
 
-const dummyReports: DailyReport[] = [
-  {
-    id: "DWR-001",
-    date: "2024-05-24",
-    employee: "Alice Johnson",
-    project: "Website Redesign",
-    hours: 8,
-    status: "Pending",
-  },
-  {
-    id: "DWR-002",
-    date: "2024-05-24",
-    employee: "Bob Smith",
-    project: "Mobile App MVP",
-    hours: 7.5,
-    status: "Approved",
-  },
-  {
-    id: "DWR-003",
-    date: "2024-05-23",
-    employee: "Charlie Davis",
-    project: "CRM Integration",
-    hours: 8,
-    status: "Approved",
-  },
-  {
-    id: "DWR-004",
-    date: "2024-05-23",
-    employee: "Alice Johnson",
-    project: "Website Redesign",
-    hours: 4,
-    status: "Rejected",
-  },
-];
+
 
 export default function DailyReportsPage() {
   const [openCreate, setOpenCreate] = useState(false);
+  const [reports, setReports] = useState<DailyReport[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuthStore();
 
-  const onSubmit = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    hours: "",
+    projectId: "",
+    tasksWorkedOn: "",
+    blockers: "",
+    plan: ""
+  });
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const isManagerOrAdmin = user?.role === "ADMIN" || user?.role === "MANAGER";
+      
+      const [reportsData, projectsData] = await Promise.all([
+        isManagerOrAdmin ? dailyReportService.getAllReports() : dailyReportService.getMyReports(),
+        projectService.getAllProjects()
+      ]);
+      setReports(reportsData);
+      setProjects(projectsData);
+    } catch (error) {
+      toast.error("Failed to fetch data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Daily Work Report submitted for review");
-    setOpenCreate(false);
+    try {
+      await dailyReportService.createReport({
+        ...formData,
+        hours: Number(formData.hours)
+      });
+      toast.success("Daily Work Report submitted successfully");
+      setOpenCreate(false);
+      fetchData(); // refresh list
+    } catch (error) {
+      toast.error("Failed to submit report");
+    }
+  };
+
+  const handleStatusChange = async (id: string, status: "Approved" | "Rejected") => {
+    try {
+      await dailyReportService.updateStatus(id, status);
+      toast.success(`Report ${status}`);
+      fetchData(); // refresh
+    } catch (error) {
+      toast.error("Failed to update status");
+    }
   };
 
   const columns = useMemo<ColumnDef<DailyReport>[]>(() => [
@@ -100,10 +116,16 @@ export default function DailyReportsPage() {
     {
       accessorKey: "employee",
       header: "Employee",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.user?.name || "Unknown"}</span>
+      )
     },
     {
       accessorKey: "project",
       header: "Project",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.project?.name || "Unknown"}</span>
+      )
     },
     {
       accessorKey: "hours",
@@ -151,14 +173,14 @@ export default function DailyReportsPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Report Details ({report.id})</DialogTitle>
-                <DialogDescription>Submitted by {report.employee} on {report.date}</DialogDescription>
+                <DialogTitle>Report Details</DialogTitle>
+                <DialogDescription>Submitted by {report.user?.name} on {report.date}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-semibold text-muted-foreground">Project</span>
-                    <p>{report.project}</p>
+                    <p>{report.project?.name}</p>
                   </div>
                   <div>
                     <span className="font-semibold text-muted-foreground">Hours Logged</span>
@@ -176,14 +198,13 @@ export default function DailyReportsPage() {
                 <div className="text-sm">
                   <span className="font-semibold text-muted-foreground">Tasks Worked On</span>
                   <div className="p-3 bg-muted rounded-md mt-1 whitespace-pre-wrap">
-                    - Built navigation bar
-                    - Fixed layout bugs
+                    {report.tasksWorkedOn}
                   </div>
                 </div>
                 <div className="text-sm">
                   <span className="font-semibold text-muted-foreground">Tomorrow's Plan</span>
                   <div className="p-3 bg-muted rounded-md mt-1">
-                    Will continue with the API integration and write tests.
+                    {report.plan || "N/A"}
                   </div>
                 </div>
               </div>
@@ -193,8 +214,12 @@ export default function DailyReportsPage() {
                 </DialogClose>
                 {report.status === "Pending" && (
                   <>
-                    <Button variant="destructive">Reject</Button>
-                    <Button>Approve</Button>
+                    <DialogClose asChild>
+                      <Button variant="destructive" onClick={() => handleStatusChange(report.id, "Rejected")}>Reject</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button onClick={() => handleStatusChange(report.id, "Approved")}>Approve</Button>
+                    </DialogClose>
                   </>
                 )}
               </DialogFooter>
@@ -229,25 +254,24 @@ export default function DailyReportsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date">Date <span className="text-red-500">*</span></Label>
-                  <Input id="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                  <Input id="date" type="date" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="hours">Hours Logged <span className="text-red-500">*</span></Label>
-                  <Input id="hours" type="number" step="0.5" placeholder="e.g. 8" required />
+                  <Input id="hours" type="number" step="0.5" placeholder="e.g. 8" required value={formData.hours} onChange={(e) => setFormData({...formData, hours: e.target.value})} />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="project">Project <span className="text-red-500">*</span></Label>
-                <Select required>
+                <Select required value={formData.projectId} onValueChange={(val) => setFormData({...formData, projectId: val})}>
                   <SelectTrigger id="project">
                     <SelectValue placeholder="Select project you worked on" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="prj1">Website Redesign</SelectItem>
-                    <SelectItem value="prj2">Mobile App MVP</SelectItem>
-                    <SelectItem value="prj3">CRM Integration</SelectItem>
-                    <SelectItem value="internal">Internal/Bench</SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -259,6 +283,8 @@ export default function DailyReportsPage() {
                   placeholder="- Built navigation bar&#10;- Fixed layout bugs" 
                   className="min-h-[100px]" 
                   required 
+                  value={formData.tasksWorkedOn}
+                  onChange={(e) => setFormData({...formData, tasksWorkedOn: e.target.value})}
                 />
               </div>
               
@@ -268,12 +294,14 @@ export default function DailyReportsPage() {
                   id="blockers" 
                   placeholder="Any dependencies or issues blocking your progress?" 
                   className="min-h-[80px]" 
+                  value={formData.blockers}
+                  onChange={(e) => setFormData({...formData, blockers: e.target.value})}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="plan">Tomorrow's Plan</Label>
-                <Input id="plan" placeholder="Briefly state what you will work on tomorrow." />
+                <Input id="plan" placeholder="Briefly state what you will work on tomorrow." value={formData.plan} onChange={(e) => setFormData({...formData, plan: e.target.value})} />
               </div>
               
               <SheetFooter className="mt-8 pt-4 border-t flex-row justify-end space-x-2">
@@ -289,13 +317,19 @@ export default function DailyReportsPage() {
       </div>
 
       <div className="bg-card rounded-xl border shadow-sm p-4">
-        <DataTable 
-          columns={columns} 
-          data={dummyReports} 
-          gridCount={dummyReports.length} 
-          toolbar={true}
-          searchKey="employee"
-        />
+        {loading ? (
+          <div className="flex justify-center items-center py-10">
+            <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <DataTable 
+            columns={columns} 
+            data={reports} 
+            gridCount={reports.length} 
+            toolbar={true}
+            searchKey="employee"
+          />
+        )}
       </div>
     </div>
   );

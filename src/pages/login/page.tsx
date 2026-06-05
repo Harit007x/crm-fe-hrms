@@ -98,10 +98,22 @@ export default function LoginPage() {
       const response = await authService.login(values.email, values.password, values.rememberMe);
 
       if (response.success && response.data) {
+        const userRole = (response.data as any).role;
+        
+        if (userRole === "ADMIN" || userRole === "CLIENT") {
+          toast.error("Access Denied: This portal is exclusively for HR Managers and Employees.");
+          setIsLoading(false);
+          return;
+        }
+
         setAuth(response.data, response.accessToken || null);
         toast.success("Login successful");
-        // Successful login, redirect to admin dashboard
-        navigate("/admin/dashboard");
+        // Redirect based on role
+        if (userRole === "HR") {
+          navigate("/hr/dashboard");
+        } else {
+          navigate("/admin/dashboard");
+        }
       } else {
         // Handle error message
         toast.error(response.message || "Login failed");

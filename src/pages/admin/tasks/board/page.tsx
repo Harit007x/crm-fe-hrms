@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
+import { taskService } from "@/services/task.service";
+import { toast } from "sonner";
 
 // Types
 type Task = {
@@ -24,47 +26,53 @@ type BoardData = {
   columnOrder: string[];
 };
 
-// Initial Data
-const initialData: BoardData = {
-  tasks: {
-    "task-1": { id: "task-1", content: "Design landing page", priority: "High", assignee: "Alice" },
-    "task-2": { id: "task-2", content: "Integrate Stripe API", priority: "High", assignee: "Bob" },
-    "task-3": { id: "task-3", content: "Create database schema", priority: "Medium", assignee: "Charlie" },
-    "task-4": { id: "task-4", content: "Write API docs", priority: "Low", assignee: "Alice" },
-    "task-5": { id: "task-5", content: "Fix login bug", priority: "High", assignee: "Bob" },
-  },
+const emptyBoardData: BoardData = {
+  tasks: {},
   columns: {
-    "column-1": {
-      id: "column-1",
-      title: "Backlog",
-      taskIds: ["task-1", "task-2"],
-    },
-    "column-2": {
-      id: "column-2",
-      title: "To Do",
-      taskIds: ["task-3"],
-    },
-    "column-3": {
-      id: "column-3",
-      title: "In Progress",
-      taskIds: ["task-4"],
-    },
-    "column-4": {
-      id: "column-4",
-      title: "Review",
-      taskIds: ["task-5"],
-    },
-    "column-5": {
-      id: "column-5",
-      title: "Done",
-      taskIds: [],
-    },
+    "column-1": { id: "column-1", title: "Backlog", taskIds: [] },
+    "column-2": { id: "column-2", title: "To Do", taskIds: [] },
+    "column-3": { id: "column-3", title: "In Progress", taskIds: [] },
+    "column-4": { id: "column-4", title: "Review", taskIds: [] },
+    "column-5": { id: "column-5", title: "Done", taskIds: [] },
   },
   columnOrder: ["column-1", "column-2", "column-3", "column-4", "column-5"],
 };
 
 export default function TasksBoardPage() {
-  const [data, setData] = useState<BoardData>(initialData);
+  const [data, setData] = useState<BoardData>(emptyBoardData);
+  const [, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const apiTasks = await taskService.getAllTasks();
+      
+      const newBoardData = JSON.parse(JSON.stringify(emptyBoardData)) as BoardData;
+      
+      apiTasks.forEach((apiTask) => {
+        newBoardData.tasks[apiTask.id] = {
+          id: apiTask.id,
+          content: apiTask.content,
+          priority: apiTask.priority,
+          assignee: apiTask.assignee?.name || "Unassigned"
+        };
+        const colId = apiTask.status || "column-1";
+        if (newBoardData.columns[colId]) {
+          newBoardData.columns[colId].taskIds.push(apiTask.id);
+        }
+      });
+      
+      setData(newBoardData);
+    } catch (error) {
+      toast.error("Failed to load tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -125,6 +133,13 @@ export default function TasksBoardPage() {
         [newFinish.id]: newFinish,
       },
     }));
+
+    // Update status in the backend
+    taskService.updateTask(draggableId, { status: destination.droppableId })
+      .catch(() => {
+        toast.error("Failed to update task status");
+        fetchTasks(); // Revert on failure
+      });
   };
 
   return (
