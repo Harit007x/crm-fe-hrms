@@ -25,6 +25,8 @@ export default function HREventsPage() {
     date: string;
     description?: string;
     color: string;
+    createdBy?: string;
+    creatorRole?: string;
   } | null>(null);
 
   const fetchData = async () => {
@@ -86,15 +88,22 @@ export default function HREventsPage() {
 
     const dayEvents = events
       .filter((ev) => format(new Date(ev.date), "yyyy-MM-dd") === dateString)
-      .map((ev) => ({
-        id: `ev-${ev.id}`,
-        title: ev.title,
-        type: "Event",
-        date: format(new Date(ev.date), "yyyy-MM-dd"),
-        description: ev.description,
-        color: "text-primary hover:text-primary/80",
-        dot: "bg-primary",
-      }));
+      .map((ev) => {
+        const isHREvent = ev.user?.role === "HR";
+        return {
+          id: `ev-${ev.id}`,
+          title: isHREvent ? `📢 HR: ${ev.title}` : ev.title,
+          type: "Event",
+          date: format(new Date(ev.date), "yyyy-MM-dd"),
+          description: ev.description,
+          color: isHREvent 
+            ? "text-violet-500 hover:text-violet-600 font-semibold" 
+            : "text-primary hover:text-primary/80",
+          dot: isHREvent ? "bg-violet-500" : "bg-primary",
+          createdBy: ev.user?.name,
+          creatorRole: ev.user?.role,
+        };
+      });
 
     return [...dayHolidays, ...dayEvents];
   };
@@ -232,6 +241,23 @@ export default function HREventsPage() {
               <span className="text-sm font-medium text-muted-foreground">Date</span>
               <span>{selectedEvent?.date}</span>
             </div>
+            {selectedEvent?.createdBy && (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-muted-foreground">Created By</span>
+                <span className="flex items-center gap-2">
+                  <span>{selectedEvent.createdBy}</span>
+                  {selectedEvent.creatorRole && (
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${
+                      selectedEvent.creatorRole === "HR" 
+                        ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400" 
+                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                    }`}>
+                      {selectedEvent.creatorRole}
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
             {selectedEvent?.description && (
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-muted-foreground">Description</span>

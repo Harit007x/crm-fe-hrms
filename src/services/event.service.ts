@@ -11,6 +11,7 @@ export interface EventRecord {
   user?: {
     id: string;
     name: string;
+    role?: string;
   };
 }
 

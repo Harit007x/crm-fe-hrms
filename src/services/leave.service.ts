@@ -11,6 +11,11 @@ export interface LeaveRecord {
   status: "Pending" | "Approved" | "Rejected";
   createdAt: string;
   updatedAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export const leaveService = {

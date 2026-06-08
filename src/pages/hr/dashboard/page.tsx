@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { useEffect, useState, useCallback } from "react";
 import { Icons } from "@/components/icons";
 import { userService } from "@/services/user.service";
@@ -44,7 +43,6 @@ type EmployeeTask = {
 };
 
 export default function HRDashboardPage() {
-  const { t } = useTranslation();
   const { user } = useAuthStore();
   
   // HR Stats

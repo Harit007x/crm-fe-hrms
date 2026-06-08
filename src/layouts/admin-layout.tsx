@@ -33,21 +33,6 @@ export default function AdminLayout() {
       ],
     },
     {
-      title: "Management",
-      items: [
-        {
-          title: "Projects",
-          path: "/admin/projects",
-          icon: <Icons.folder className="w-5 h-5" />,
-        },
-        {
-          title: "Tasks & Board",
-          path: "/admin/tasks/board",
-          icon: <Icons.clipboardCheck className="w-5 h-5" />,
-        },
-      ],
-    },
-    {
       title: "HR Services",
       items: [
         {
@@ -89,6 +74,26 @@ export default function AdminLayout() {
           path: "/admin/files",
           icon: <Icons.cloudUpload className="w-5 h-5" />,
         },
+      ],
+    },
+    {
+      title: "Management",
+      items: [
+        {
+          title: "Projects",
+          path: "/admin/projects",
+          icon: <Icons.folder className="w-5 h-5" />,
+        },
+        {
+          title: "Tasks & Board",
+          path: "/admin/tasks/board",
+          icon: <Icons.clipboardCheck className="w-5 h-5" />,
+        },
+      ],
+    },
+    {
+      title: "Settings",
+      items: [
         {
           title: "Settings",
           path: "/admin/settings",

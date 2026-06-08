@@ -131,6 +131,7 @@ const UserActionsCell = ({ row, onRefresh }: { row: any; onRefresh: () => void }
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">ADMIN</SelectItem>
+                  <SelectItem value="MANAGER">MANAGER</SelectItem>
                   <SelectItem value="HR">HR</SelectItem>
                   <SelectItem value="TEAM_MEMBER">TEAM MEMBER</SelectItem>
                   <SelectItem value="CLIENT">CLIENT</SelectItem>
@@ -363,7 +364,7 @@ export default function AdminUsersPage() {
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"ADMIN" | "HR" | "TEAM_MEMBER" | "CLIENT">("TEAM_MEMBER");
+  const [newUserRole, setNewUserRole] = useState<"ADMIN" | "MANAGER" | "HR" | "TEAM_MEMBER" | "CLIENT">("TEAM_MEMBER");
   const [newUserLoading, setNewUserLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("users");
 
@@ -739,6 +740,7 @@ export default function AdminUsersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">ADMIN</SelectItem>
+                  <SelectItem value="MANAGER">MANAGER</SelectItem>
                   <SelectItem value="HR">HR</SelectItem>
                   <SelectItem value="TEAM_MEMBER">TEAM MEMBER</SelectItem>
                   <SelectItem value="CLIENT">CLIENT</SelectItem>

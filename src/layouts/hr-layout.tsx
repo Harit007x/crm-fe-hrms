@@ -62,6 +62,11 @@ export default function HRLayout() {
           path: "/hr/events",
           icon: <Icons.post className="w-5 h-5" />,
         },
+      ],
+    },
+    {
+      title: "Settings",
+      items: [
         {
           title: "Settings",
           path: "/hr/settings",

@@ -4,21 +4,21 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "MANAGER" | "TEAM_MEMBER" | "CLIENT";
+  role: "ADMIN" | "MANAGER" | "TEAM_MEMBER" | "CLIENT" | "HR";
   createdAt: string;
 }
 
 export interface CreateUserPayload {
   name: string;
   email: string;
-  role: "ADMIN" | "MANAGER" | "TEAM_MEMBER" | "CLIENT";
+  role: "ADMIN" | "MANAGER" | "TEAM_MEMBER" | "CLIENT" | "HR";
   password?: string;
 }
 
 export interface UpdateUserPayload {
   name?: string;
   email?: string;
-  role?: "ADMIN" | "MANAGER" | "TEAM_MEMBER" | "CLIENT";
+  role?: "ADMIN" | "MANAGER" | "TEAM_MEMBER" | "CLIENT" | "HR";
 }
 
 export const userService = {
