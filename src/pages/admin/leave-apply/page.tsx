@@ -40,6 +40,15 @@ export default function LeaveApplyPage() {
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
 
+  // Filter states
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  const handleResetFilters = () => {
+    setLeaveTypeFilter("All");
+    setStatusFilter("All");
+  };
+
   // Fetch user's leave applications on mount
   useEffect(() => {
     const fetchLeaves = async () => {
@@ -54,6 +63,20 @@ export default function LeaveApplyPage() {
     };
     fetchLeaves();
   }, []);
+
+  const filteredLeaves = useMemo(() => {
+    let result = leaves;
+
+    if (leaveTypeFilter !== "All") {
+      result = result.filter((leave) => leave.leaveType === leaveTypeFilter);
+    }
+
+    if (statusFilter !== "All") {
+      result = result.filter((leave) => leave.status === statusFilter);
+    }
+
+    return result;
+  }, [leaves, leaveTypeFilter, statusFilter]);
 
   // Leave allocation totals per type
   const LEAVE_TOTALS: Record<string, number> = {
@@ -317,6 +340,41 @@ export default function LeaveApplyPage() {
 
       {/* Leave Table */}
       <div className="bg-card rounded-xl border shadow-sm p-4">
+        <div className="mb-4 flex flex-col sm:flex-row gap-4 items-end flex-wrap">
+          <div className="w-[180px]">
+            <label className="text-xs text-muted-foreground mb-1 block">Leave Category</label>
+            <Select value={leaveTypeFilter} onValueChange={setLeaveTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Categories</SelectItem>
+                <SelectItem value="Annual Leave">Annual Leave</SelectItem>
+                <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                <SelectItem value="Casual Leave">Casual Leave</SelectItem>
+                <SelectItem value="Unpaid Leave">Unpaid Leave</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-[180px]">
+            <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Statuses</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" onClick={handleResetFilters}>
+            Reset
+          </Button>
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
             Loading leave applications...
@@ -324,10 +382,8 @@ export default function LeaveApplyPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={leaves}
-            gridCount={leaves.length}
-            toolbar={true}
-            searchKey="leaveType"
+            data={filteredLeaves}
+            gridCount={filteredLeaves.length}
           />
         )}
       </div>

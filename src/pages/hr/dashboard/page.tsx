@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { Icons } from "@/components/icons";
 import { userService } from "@/services/user.service";
 import { leaveService } from "@/services/leave.service";
-import { holidayService } from "@/services/holiday.service";
+import { holidayService, type Holiday } from "@/services/holiday.service";
 import { attendanceService, type MonthlySummary, type AttendanceRecord } from "@/services/attendance.service";
+import { format } from "date-fns";
 import { taskService } from "@/services/task.service";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +52,7 @@ export default function HRDashboardPage() {
     pendingLeaves: 0,
     upcomingHolidays: 0,
   });
+  const [holidaysList, setHolidaysList] = useState<Holiday[]>([]);
   
   // Employee Stats (Personal)
   const [attendanceSummary, setAttendanceSummary] = useState<MonthlySummary | null>(null);
@@ -75,13 +77,15 @@ export default function HRDashboardPage() {
       const pending = leaves.filter((l) => l.status === "Pending").length;
       
       const now = new Date();
-      const upcoming = holidays.filter((h) => new Date(h.date) >= now).length;
+      now.setHours(0, 0, 0, 0);
+      const upcoming = holidays.filter((h) => new Date(h.date) >= now);
 
       setStats({
         employees: activeEmployees,
         pendingLeaves: pending,
-        upcomingHolidays: upcoming,
+        upcomingHolidays: upcoming.length,
       });
+      setHolidaysList(upcoming);
     } catch (error) {
       console.error("Error fetching HR dashboard data:", error);
     }
@@ -397,6 +401,38 @@ export default function HRDashboardPage() {
             {employeeTasks.length === 0 && (
               <div className="text-center py-6 text-muted-foreground text-sm">
                 No tasks assigned to you.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Holiday List Card */}
+        <Card className="rounded-xl border-border/50 shadow-sm flex flex-col">
+          <CardHeader>
+            <CardTitle>Holiday List</CardTitle>
+            <CardDescription>Upcoming company and public holidays.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
+            {holidaysList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                <Icons.calender className="h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">No upcoming holidays scheduled</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {holidaysList.map((holiday) => (
+                  <div key={holiday.id} className="flex items-start justify-between border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold leading-none">{holiday.title}</p>
+                      {holiday.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">{holiday.description}</p>
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 ml-2">
+                      {format(new Date(holiday.date), "MMM dd, yyyy")}
+                    </Badge>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

@@ -351,6 +351,14 @@ export default function AdminUsersPage() {
   const [teamsLoading, setTeamsLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  const [searchName, setSearchName] = useState("");
+  const [searchDate, setSearchDate] = useState("");
+
+  const handleResetFilters = () => {
+    setSearchName("");
+    setSearchDate("");
+  };
+
   // Create Team state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -399,6 +407,18 @@ export default function AdminUsersPage() {
   const handleRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
   };
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchName = searchName
+        ? user.name.toLowerCase().includes(searchName.toLowerCase())
+        : true;
+      const matchDate = searchDate
+        ? new Date(user.createdAt).toISOString().split("T")[0] === searchDate
+        : true;
+      return matchName && matchDate;
+    });
+  }, [users, searchName, searchDate]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -593,6 +613,25 @@ export default function AdminUsersPage() {
         </TabsList>
 
         <TabsContent value="users" className="mt-4">
+          <div className="mb-4 flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1 max-w-sm">
+              <Input
+                placeholder="Search by name..."
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+              />
+            </div>
+            <div className="flex-1 max-w-sm">
+              <Input
+                type="date"
+                value={searchDate}
+                onChange={(e) => setSearchDate(e.target.value)}
+              />
+            </div>
+            <Button variant="outline" onClick={handleResetFilters}>
+              Reset
+            </Button>
+          </div>
           {usersLoading ? (
             <div className="flex justify-center items-center py-10">
               <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
@@ -600,8 +639,8 @@ export default function AdminUsersPage() {
           ) : (
             <DataTable
               columns={userColumns}
-              data={users}
-              gridCount={users.length}
+              data={filteredUsers}
+              gridCount={filteredUsers.length}
             />
           )}
         </TabsContent>

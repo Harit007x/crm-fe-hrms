@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ActionCell = ({ row, onRefresh }: { row: any, onRefresh: () => void }) => {
   const [loading, setLoading] = useState(false);
@@ -45,6 +52,15 @@ export default function HRLeavesPage() {
   const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [searchName, setSearchName] = useState("");
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  const handleResetFilters = () => {
+    setSearchName("");
+    setLeaveTypeFilter("All");
+    setStatusFilter("All");
+  };
 
   const fetchLeaves = async () => {
     setLoading(true);
@@ -61,6 +77,26 @@ export default function HRLeavesPage() {
   useEffect(() => {
     fetchLeaves();
   }, [refreshTrigger]);
+
+  const filteredLeaves = useMemo(() => {
+    let result = leaves;
+
+    if (searchName) {
+      result = result.filter((leave) =>
+        leave.user?.name?.toLowerCase().includes(searchName.toLowerCase())
+      );
+    }
+
+    if (leaveTypeFilter !== "All") {
+      result = result.filter((leave) => leave.leaveType === leaveTypeFilter);
+    }
+
+    if (statusFilter !== "All") {
+      result = result.filter((leave) => leave.status === statusFilter);
+    }
+
+    return result;
+  }, [leaves, searchName, leaveTypeFilter, statusFilter]);
 
   const columns = useMemo<ColumnDef<LeaveRecord>[]>(() => [
     {
@@ -122,6 +158,51 @@ export default function HRLeavesPage() {
       </div>
 
       <div className="bg-card border rounded-xl overflow-hidden shadow-sm p-4">
+        <div className="mb-4 flex flex-col sm:flex-row gap-4 items-end flex-wrap">
+          <div className="flex-1 min-w-[200px]">
+            <label className="text-xs text-muted-foreground mb-1 block">Search Employee</label>
+            <input
+              type="text"
+              placeholder="Search by name..."
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+            />
+          </div>
+          <div className="w-[180px]">
+            <label className="text-xs text-muted-foreground mb-1 block">Leave Category</label>
+            <Select value={leaveTypeFilter} onValueChange={setLeaveTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Categories</SelectItem>
+                <SelectItem value="Annual Leave">Annual Leave</SelectItem>
+                <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                <SelectItem value="Casual Leave">Casual Leave</SelectItem>
+                <SelectItem value="Unpaid Leave">Unpaid Leave</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-[180px]">
+            <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Statuses</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" onClick={handleResetFilters}>
+            Reset
+          </Button>
+        </div>
+
         {loading ? (
           <div className="flex h-32 items-center justify-center">
             <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
@@ -129,8 +210,8 @@ export default function HRLeavesPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={leaves}
-            gridCount={leaves.length}
+            data={filteredLeaves}
+            gridCount={filteredLeaves.length}
           />
         )}
       </div>

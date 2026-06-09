@@ -6,7 +6,6 @@ const api = axios.create({
   withCredentials: true, // Required for httpOnly cookies
   headers: {
     "Content-Type": "application/json",
-    "x-app-source": "crm-hrms",
   },
 });
 

@@ -98,6 +98,14 @@ export default function HRAttendancePage() {
       ),
     },
     {
+      header: "Date",
+      accessorKey: "date",
+      cell: ({ row }) => {
+        if (!row.original.date) return "-";
+        return format(new Date(row.original.date), "MMM dd, yyyy");
+      },
+    },
+    {
       header: "Punch In",
       accessorKey: "punchIn",
       cell: ({ row }) => {

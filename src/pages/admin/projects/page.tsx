@@ -47,7 +47,7 @@ export default function ProjectsPage() {
       id: "client",
       header: t("projects.labelClient", "Client"),
       cell: ({ row }) => {
-        return <span>{row.original.client?.name || "N/A"}</span>;
+        return <span>{row.original.clientName || row.original.client?.name || "N/A"}</span>;
       },
     },
     {
@@ -125,12 +125,6 @@ export default function ProjectsPage() {
           <h2 className="text-2xl font-bold tracking-tight">{t("projects.title", "Projects")}</h2>
           <p className="text-sm text-foreground/60">{t("projects.description", "Track and manage ongoing projects, scopes, and assignments.")}</p>
         </div>
-        <Link to="/admin/projects/new">
-          <Button className="flex items-center gap-2">
-            <Icons.plus className="h-4 w-4" />
-            {t("projects.createBtn", "New Project")}
-          </Button>
-        </Link>
       </div>
 
       <div className="bg-card rounded-xl border shadow-sm p-4">

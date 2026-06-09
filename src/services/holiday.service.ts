@@ -5,6 +5,7 @@ export interface Holiday {
   title: string;
   date: string;
   description?: string;
+  type?: string;
   createdAt: string;
   updatedAt: string;
 }

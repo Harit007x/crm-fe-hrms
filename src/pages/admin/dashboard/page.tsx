@@ -23,6 +23,8 @@ import { leaveService, type LeaveRecord } from "@/services/leave.service";
 import { expenseService, type Expense } from "@/services/expense.service";
 import { taskService } from "@/services/task.service";
 import { dailyReportService } from "@/services/dailyReport.service";
+import { holidayService, type Holiday } from "@/services/holiday.service";
+import { format } from "date-fns";
 
 function formatTime(isoString: string | null): string {
   if (!isoString) return "--:--";
@@ -71,6 +73,7 @@ export default function DashboardPage() {
   const [punchLoading, setPunchLoading] = useState(false);
   const [myLeaves, setMyLeaves] = useState<LeaveRecord[]>([]);
   const [, setMyExpenses] = useState<Expense[]>([]);
+  const [holidaysList, setHolidaysList] = useState<Holiday[]>([]);
   const [hrEvents, setHrEvents] = useState<{
     id: string;
     type: "Leave" | "Expense";
@@ -115,10 +118,16 @@ export default function DashboardPage() {
 
   const fetchEmployeeUpdates = useCallback(async () => {
     try {
-      const [leaveRecords, expenseRecords] = await Promise.all([
+      const [leaveRecords, expenseRecords, holidays] = await Promise.all([
         leaveService.getMyLeaves(),
         expenseService.getAllExpenses(),
+        holidayService.getHolidays(),
       ]);
+
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const upcomingHolidays = holidays.filter((h) => new Date(h.date) >= now);
+      setHolidaysList(upcomingHolidays);
 
       const filteredExpenses = expenseRecords.filter((expense) => {
         if (!user) return true;
@@ -454,7 +463,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="rounded-xl border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle>Work Hours This Week</CardTitle>
@@ -489,6 +498,38 @@ export default function DashboardPage() {
                 </Badge>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Holiday List Card */}
+        <Card className="rounded-xl border-border/50 shadow-sm flex flex-col">
+          <CardHeader>
+            <CardTitle>Holiday List</CardTitle>
+            <CardDescription>Upcoming company and public holidays.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
+            {holidaysList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                <Icons.calender className="h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">No upcoming holidays scheduled</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {holidaysList.map((holiday) => (
+                  <div key={holiday.id} className="flex items-start justify-between border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold leading-none">{holiday.title}</p>
+                      {holiday.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">{holiday.description}</p>
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 ml-2">
+                      {format(new Date(holiday.date), "MMM dd, yyyy")}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -58,10 +58,11 @@ export default function DailyReportsPage() {
     plan: ""
   });
 
+  const isManagerOrAdmin = user?.role === "ADMIN" || user?.role === "MANAGER";
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      const isManagerOrAdmin = user?.role === "ADMIN" || user?.role === "MANAGER";
       
       const [reportsData, projectsData] = await Promise.all([
         isManagerOrAdmin ? dailyReportService.getAllReports() : dailyReportService.getMyReports(),
@@ -212,7 +213,7 @@ export default function DailyReportsPage() {
                 <DialogClose asChild>
                   <Button variant="outline">Close</Button>
                 </DialogClose>
-                {report.status === "Pending" && (
+                {report.status === "Pending" && isManagerOrAdmin && (
                   <>
                     <DialogClose asChild>
                       <Button variant="destructive" onClick={() => handleStatusChange(report.id, "Rejected")}>Reject</Button>
@@ -228,7 +229,7 @@ export default function DailyReportsPage() {
         );
       },
     }
-  ], []);
+  ], [user]);
 
   return (
     <div className="flex flex-col space-y-4 h-full">
