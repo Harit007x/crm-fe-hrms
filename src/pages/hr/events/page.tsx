@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths } from "date-fns";
 import { holidayService, type Holiday } from "@/services/holiday.service";
 import { eventService, type EventRecord } from "@/services/event.service";
+import { leaveService, type LeaveRecord } from "@/services/leave.service";
+import { expenseService, type Expense } from "@/services/expense.service";
 import { useAuthStore } from "@/store/auth-store";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,8 @@ export default function HREventsPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [events, setEvents] = useState<EventRecord[]>([]);
+  const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({ title: "", description: "", date: "" });
   const [selectedEvent, setSelectedEvent] = useState<{
@@ -24,6 +28,7 @@ export default function HREventsPage() {
     type: string;
     date: string;
     description?: string;
+    status?: string;
     color: string;
     createdBy?: string;
     creatorRole?: string;
@@ -31,14 +36,18 @@ export default function HREventsPage() {
 
   const fetchData = async () => {
     try {
-      const [holidayRecords, eventRecords] = await Promise.all([
+      const [holidayRecords, eventRecords, leaveRecords, expenseRecords] = await Promise.all([
         holidayService.getHolidays(),
         eventService.getEvents(),
+        leaveService.getAllLeaves(),
+        expenseService.getAllExpenses(),
       ]);
       setHolidays(holidayRecords);
       // Only show events created by this HR user
       const myEvents = eventRecords.filter((ev) => ev.userId === user?.id);
       setEvents(myEvents);
+      setLeaves(leaveRecords);
+      setExpenses(expenseRecords);
     } catch (error) {
       toast.error("Failed to fetch calendar data");
     }
@@ -105,7 +114,50 @@ export default function HREventsPage() {
         };
       });
 
-    return [...dayHolidays, ...dayEvents];
+    const dayLeaves = leaves
+      .filter((lv) => {
+        const start = new Date(lv.startDate).setHours(0, 0, 0, 0);
+        const end = new Date(lv.endDate).setHours(0, 0, 0, 0);
+        const current = date.setHours(0, 0, 0, 0);
+        return current >= start && current <= end;
+      })
+      .map((lv) => ({
+        id: `lv-${lv.id}`,
+        title: `Leave: ${lv.user?.name || "Employee"} (${lv.leaveType})`,
+        type: "Leave",
+        date: `${format(new Date(lv.startDate), "yyyy-MM-dd")} to ${format(new Date(lv.endDate), "yyyy-MM-dd")}`,
+        status: lv.status,
+        description: lv.reason,
+        color: lv.status === "Approved" ? "text-emerald-500 hover:text-emerald-600"
+             : lv.status === "Rejected" ? "text-rose-500 hover:text-rose-600"
+             : "text-amber-500 hover:text-amber-600",
+        dot: lv.status === "Approved" ? "bg-emerald-500"
+           : lv.status === "Rejected" ? "bg-rose-500"
+           : "bg-amber-500",
+        createdBy: lv.user?.name,
+        creatorRole: undefined,
+      }));
+
+    const dayExpenses = expenses
+      .filter((ex) => format(new Date(ex.date), "yyyy-MM-dd") === dateString)
+      .map((ex) => ({
+        id: `ex-${ex.id}`,
+        title: `Expense: ${ex.submittedBy?.name || "Employee"} (${ex.category})`,
+        type: "Expense",
+        date: format(new Date(ex.date), "yyyy-MM-dd"),
+        status: ex.status,
+        description: `${ex.description} (Amount: $${ex.amount})`,
+        color: ex.status === "Approved" ? "text-emerald-500 hover:text-emerald-600"
+             : ex.status === "Rejected" ? "text-rose-500 hover:text-rose-600"
+             : "text-amber-500 hover:text-amber-600",
+        dot: ex.status === "Approved" ? "bg-emerald-500"
+           : ex.status === "Rejected" ? "bg-rose-500"
+           : "bg-amber-500",
+        createdBy: ex.submittedBy?.name,
+        creatorRole: undefined,
+      }));
+
+    return [...dayHolidays, ...dayEvents, ...dayLeaves, ...dayExpenses];
   };
 
   return (
@@ -241,6 +293,12 @@ export default function HREventsPage() {
               <span className="text-sm font-medium text-muted-foreground">Date</span>
               <span>{selectedEvent?.date}</span>
             </div>
+            {selectedEvent?.status && (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-muted-foreground">Status</span>
+                <span>{selectedEvent?.status}</span>
+              </div>
+            )}
             {selectedEvent?.createdBy && (
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-muted-foreground">Created By</span>

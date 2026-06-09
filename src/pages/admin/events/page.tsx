@@ -38,19 +38,14 @@ export default function EventsPage() {
     try {
       const [eventsData, leaveRecords, expenseRecords, holidayRecords] = await Promise.all([
         eventService.getEvents(),
-        leaveService.getMyLeaves(),
+        leaveService.getAllLeaves(),
         expenseService.getAllExpenses(),
         holidayService.getHolidays(),
       ]);
 
-      const filteredExpenses = expenseRecords.filter((expense) => {
-        if (!user) return true;
-        return expense.submittedById === user.id || expense.submittedBy?.id === user.id;
-      });
-
       setEvents(eventsData);
       setLeaves(leaveRecords);
-      setExpenses(filteredExpenses);
+      setExpenses(expenseRecords);
       setHolidays(holidayRecords);
     } catch (error) {
       toast.error("Failed to fetch calendar data");
@@ -115,7 +110,7 @@ export default function EventsPage() {
       })
       .map((lv) => ({
         id: `lv-${lv.id}`,
-        title: `Leave: ${lv.leaveType}`,
+        title: `Leave: ${lv.user?.name || "Employee"} (${lv.leaveType})`,
         type: "Leave",
         date: `${format(new Date(lv.startDate), "yyyy-MM-dd")} to ${format(new Date(lv.endDate), "yyyy-MM-dd")}`,
         status: lv.status,
@@ -126,13 +121,15 @@ export default function EventsPage() {
         dot: lv.status === "Approved" ? "bg-emerald-500"
            : lv.status === "Rejected" ? "bg-rose-500"
            : "bg-amber-500",
+        createdBy: lv.user?.name,
+        creatorRole: undefined,
       }));
 
     const dayExpenses = expenses
       .filter((ex) => format(new Date(ex.date), "yyyy-MM-dd") === dateString)
       .map((ex) => ({
         id: `ex-${ex.id}`,
-        title: `Expense: ${ex.category}`,
+        title: `Expense: ${ex.submittedBy?.name || "Employee"} (${ex.category})`,
         type: "Expense",
         date: format(new Date(ex.date), "yyyy-MM-dd"),
         status: ex.status,
@@ -143,6 +140,8 @@ export default function EventsPage() {
         dot: ex.status === "Approved" ? "bg-emerald-500"
            : ex.status === "Rejected" ? "bg-rose-500"
            : "bg-amber-500",
+        createdBy: ex.submittedBy?.name,
+        creatorRole: undefined,
       }));
 
     const dayHolidays = holidays

@@ -33,7 +33,7 @@
     }
   },
   "login": {
-    "welcome": "Welcome to Axoracomp - Admin",
+    "welcome": "Welcome to HRMS",
     "signInHint": "Please sign in to your account to continue",
     "demoCredentials": "Demo Credentials:",
     "emailLabel": "Email",
