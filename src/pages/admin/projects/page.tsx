@@ -4,6 +4,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
+import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
+import { TableSkeleton } from "@/components/table-skeleton";
 import { projectService, type Project } from "@/services/project.service";
 import { useTranslation } from "react-i18next";
 
@@ -35,10 +38,13 @@ export default function ProjectsPage() {
         const project = row.original;
         return (
           <div className="flex flex-col">
-            <span className="font-semibold text-blue hover:underline">
-              <Link to={`/admin/projects/${project.id}`}>{project.name}</Link>
-            </span>
-            <span className="text-xs text-foreground/50">{project.code || "No Code"}</span>
+            <Link
+              to={`/admin/projects/${project.id}`}
+              className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+            >
+              {project.name}
+            </Link>
+            <span className="text-xs text-muted-foreground">{project.code || "No code"}</span>
           </div>
         );
       },
@@ -53,20 +59,7 @@ export default function ProjectsPage() {
     {
       accessorKey: "status",
       header: t("common.status", "Status"),
-      cell: ({ row }) => {
-        const status = row.original.status;
-        let badgeVariant: "green" | "orange" | "blue" | "red" = "blue";
-        
-        if (status === "Completed") badgeVariant = "green";
-        else if (status === "Pending") badgeVariant = "orange";
-        else if (status === "Delayed") badgeVariant = "red";
-        
-        return (
-          <span className="capitalize">
-            <Badge variant={badgeVariant}>{status}</Badge>
-          </span>
-        );
-      },
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
 
     {
@@ -104,39 +97,21 @@ export default function ProjectsPage() {
     }
   ], [t]);
 
-  // Temporary local badge helper since Badge is imported from components/ui/badge
-  const Badge = ({ variant, children }: { variant: "green" | "orange" | "blue" | "red" | "secondary"; children: React.ReactNode }) => {
-    let classes = "bg-primary/10 text-primary";
-    if (variant === "green") classes = "bg-greenBackground text-green hover:bg-greenBackground/80";
-    else if (variant === "orange") classes = "bg-orangeBackground text-orange hover:bg-orangeBackground/80";
-    else if (variant === "red") classes = "bg-redBackground text-red hover:bg-redBackground/80";
-    else if (variant === "secondary") classes = "bg-secondary text-secondary-foreground";
-    return (
-      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${classes}`}>
-        {children}
-      </span>
-    );
-  };
-
   return (
-    <div className="flex flex-col space-y-4 h-full animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">{t("projects.title", "Projects")}</h2>
-          <p className="text-sm text-foreground/60">{t("projects.description", "Track and manage ongoing projects, scopes, and assignments.")}</p>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={t("projects.title", "Projects")}
+        description={t("projects.description", "Track and manage ongoing projects, scopes, and assignments.")}
+      />
 
-      <div className="bg-card rounded-xl border shadow-sm p-4">
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
         {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <TableSkeleton rows={6} columns={4} />
         ) : (
-          <DataTable 
-            columns={columns} 
-            data={projects} 
-            gridCount={projects.length} 
+          <DataTable
+            columns={columns}
+            data={projects}
+            gridCount={projects.length}
             toolbar={true}
           />
         )}

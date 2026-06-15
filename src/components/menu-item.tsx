@@ -74,11 +74,13 @@ const MenuItem = ({ item }: { item: SideNavItem }) => {
   return (
     <Link
       to={item.path}
+      aria-current={isActive(item.path) ? "page" : undefined}
       className={clsx(
-        "relative flex flex-row items-center gap-2 rounded-lg p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground/80 [overflow-wrap:anywhere] [&_svg]:size-4 [&_svg]:shrink-0",
+        "relative flex flex-row items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors [overflow-wrap:anywhere] [&_svg]:size-4 [&_svg]:shrink-0",
         {
-          "bg-primary/10 text-primary": isActive(item.path),
-          "text-muted-foreground": !isActive(item.path),
+          "bg-primary/10 font-semibold text-primary": isActive(item.path),
+          "font-medium text-muted-foreground hover:bg-accent hover:text-foreground":
+            !isActive(item.path),
         }
       )}
     >

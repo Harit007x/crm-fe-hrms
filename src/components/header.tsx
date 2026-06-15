@@ -15,7 +15,7 @@ function Header(props: IHeader) {
   return (
     <div
       className={clsx(
-        "sticky top-0 z-30 flex justify-between h-16 bg-background justify-between items-center border-b border-sidebar-border bg-sidebar px-4",
+        "sticky top-0 z-30 flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar/80 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-sidebar/60",
         { "justify-end": !props.collapsed }
       )}
     >
@@ -23,7 +23,7 @@ function Header(props: IHeader) {
         toggleCollapse={props.toggleCollapse}
         collapsed={!props.collapsed}
         children={
-          <Icons.panelLeftOpen className="h-4.5 w-4.5 m-[0.1rem] text-muted-foreground group-hover:text-text" />
+          <Icons.panelLeftOpen className="h-4.5 w-4.5 m-[0.1rem] text-muted-foreground group-hover:text-foreground" />
         }
         className={clsx({ hidden: !props.collapsed })}
       />

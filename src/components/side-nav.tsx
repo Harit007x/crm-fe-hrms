@@ -20,8 +20,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BadgeCheck, Bell, CreditCard, LogOut, MoreVertical } from "lucide-react";
+import { LogOut, MoreVertical, Settings as SettingsIcon, UserRound } from "lucide-react";
 import { toast } from "sonner";
+import { Logo } from "./brand";
 
 interface SideNavProps {
   children: React.ReactNode;
@@ -113,24 +114,21 @@ const SideNav = ({ navBar, children }: SideNavProps) => {
         <div className="flex flex-col w-full h-full w-[18rem]">
           {/* Fixed inner width to prevent content squishing during transition */}
           <div className="flex gap-4 items-center min-h-[4rem] h-16 border-b border-sidebar-border sticky top-0 bg-sidebar z-10">
-            <div className="w-full flex justify-between items-center text-xl px-4">
-              <div
-                className="flex justify-start items-center gap-2 group cursor-pointer px-2 py-1 rounded-md select-none"
+            <div className="w-full flex justify-between items-center px-4">
+              <button
+                type="button"
+                className="flex items-center rounded-md px-1 py-1 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 onClick={() => navigate("/")}
+                aria-label="Zynetz home"
               >
-                <div className="size-7 rounded-sm bg-primary flex items-center justify-center text-white font-bold text-xl shadow-[0px_1px_15px_-3px_rgba(255,_255,_255,_1)]">
-                  A
-                </div>
-                <span className="text-xl font-bold tracking-tight text-foreground">
-                  Axoracomp
-                </span>
-              </div>
+                <Logo size="md" />
+              </button>
 
               <SideNavToggleBtn
                 toggleCollapse={toggleCollapse}
                 collapsed={!sidebarOpen}
               >
-                <Icons.panelLeftClose className="h-4.5 w-4.5 m-[0.1rem] text-muted-foreground group-hover:text-text" />
+                <Icons.panelLeftClose className="h-4.5 w-4.5 m-[0.1rem] text-muted-foreground group-hover:text-foreground" />
               </SideNavToggleBtn>
             </div>
           </div>
@@ -139,11 +137,11 @@ const SideNav = ({ navBar, children }: SideNavProps) => {
             {/* Scrollable content */}
             <div className="flex flex-col">
               {navBar.map((category, idx) => (
-                <div key={idx} className="mt-4">
-                  <p className="px-2 mb-1 text-sm font-medium ui-text text-text">
+                <div key={idx} className="mt-5 first:mt-2">
+                  <p className="px-2 mb-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/70">
                     {category.title}
                   </p>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-0.5">
                     {category.items.map((item, itemIdx) => (
                       <MenuItem key={itemIdx} item={item} />
                     ))}
@@ -188,21 +186,20 @@ const SideNav = ({ navBar, children }: SideNavProps) => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <BadgeCheck className="mr-2" />
+                  <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
+                    <UserRound className="mr-2" />
                     Account
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <CreditCard className="mr-2" />
-                    Billing
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Bell className="mr-2" />
-                    Notifications
+                  <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
+                    <SettingsIcon className="mr-2" />
+                    Settings
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red focus:text-red focus:bg-redBackground"
+                >
                   <LogOut className="mr-2" />
                   Log out
                 </DropdownMenuItem>
@@ -215,7 +212,9 @@ const SideNav = ({ navBar, children }: SideNavProps) => {
       {/* Content */}
       <main className="flex flex-col w-full flex-1 min-w-0">
         <Header collapsed={!sidebarOpen} toggleCollapse={toggleCollapse} />
-        <div className="flex-1 p-4 m-0 bg-background">{children}</div>
+        <div className="flex-1 bg-background px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+          {children}
+        </div>
       </main>
     </div>
   );

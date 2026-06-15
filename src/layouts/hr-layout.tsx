@@ -1,7 +1,7 @@
 import SideNav from "@/components/side-nav";
 import { Icons } from "@/components/icons";
 import type { SideNavbar } from "@/utils/types";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
@@ -10,6 +10,7 @@ export default function HRLayout() {
   const { user, logout } = useAuthStore();
   const role = user?.role || "TEAM_MEMBER";
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (role !== "HR" && role !== "ADMIN") {
@@ -78,7 +79,7 @@ export default function HRLayout() {
 
   return (
     <SideNav navBar={navItems}>
-      <div className="max-w-7xl mx-auto w-full">
+      <div key={location.pathname} className="mx-auto w-full max-w-7xl animate-page-enter">
         <Outlet />
       </div>
     </SideNav>

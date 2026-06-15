@@ -2,9 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { attendanceService, type AttendanceRecord } from "@/services/attendance.service";
 import { DataTable } from "@/components/data-table/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
+import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
+import { TableSkeleton } from "@/components/table-skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import IconWrapper from "@/components/icons-wrapper";
@@ -37,7 +39,7 @@ const ActionCell = ({ row, onRefresh }: { row: any, onRefresh: () => void }) => 
   return (
     <div className="w-fit flex gap-1">
       <IconWrapper
-        className="cursor-pointer text-red hover:fill-redBackground hover:bg-redBackground"
+        className="cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         onClick={() => setIsDeleteOpen(true)}
       >
         <Icons.trash className="h-4 w-4" />
@@ -53,7 +55,7 @@ const ActionCell = ({ row, onRefresh }: { row: any, onRefresh: () => void }) => 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red hover:bg-red/90 text-white">
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -129,13 +131,7 @@ export default function HRAttendancePage() {
     {
       header: "Status",
       accessorKey: "status",
-      cell: ({ row }) => {
-        const status = row.original.status;
-        let variant: "green" | "red" | "orange" = "green";
-        if (status === "Late") variant = "orange";
-        if (status === "Half-Day") variant = "red";
-        return <Badge variant={variant as any}>{status}</Badge>;
-      },
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       header: "Notes",
@@ -150,27 +146,23 @@ export default function HRAttendancePage() {
   ], [date]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Attendance Management</h2>
-          <p className="text-muted-foreground">View daily employee punch-in and punch-out records.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Input 
-            type="date" 
-            value={date} 
-            onChange={(e) => setDate(e.target.value)} 
+    <div className="space-y-6">
+      <PageHeader
+        title="Attendance Management"
+        description="View daily employee punch-in and punch-out records."
+        actions={
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             className="w-auto"
           />
-        </div>
-      </div>
+        }
+      />
 
-      <div className="bg-card border rounded-xl overflow-hidden shadow-sm p-4">
+      <div className="overflow-hidden rounded-xl border bg-card p-4 shadow-sm">
         {loading ? (
-          <div className="flex h-32 items-center justify-center">
-            <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <TableSkeleton rows={6} columns={7} />
         ) : (
           <DataTable
             columns={columns}

@@ -9,6 +9,8 @@ import { useAuthStore } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Icons } from "@/components/icons";
+import { Logo, APP_NAME } from "@/components/brand";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -87,26 +89,57 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen w-full">
       <div className="flex min-h-screen flex-col lg:grid lg:grid-cols-2">
-        {/* LEFT SECTION */}
-        <div className="flex items-center justify-center gap-2 bg-primary text-white p-8 ">
-          {" "}
-          <div className="size-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-xl shadow-[0px_1px_15px_-3px_rgba(255,_255,_255,_1)]">
-            A
+        {/* LEFT SECTION — branded panel */}
+        <div className="bg-brand-spotlight relative hidden flex-col justify-between overflow-hidden p-12 text-primary-foreground lg:flex">
+          <div className="bg-grid pointer-events-none absolute inset-0 opacity-[0.07]" />
+          <div className="relative flex items-center gap-2.5">
+            <span className="flex size-8 items-center justify-center rounded-[7px] bg-white/15 ring-1 ring-inset ring-white/25 backdrop-blur-sm">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="size-4"
+                aria-hidden="true"
+              >
+                <path d="M7 7h10L7 17h10" />
+              </svg>
+            </span>
+            <span className="font-display text-lg font-bold tracking-tight">
+              {APP_NAME}
+            </span>
           </div>
-          <span className="text-2xl font-bold tracking-tight text-white">
-            Axoracomp
-          </span>
+
+          <div className="relative max-w-md space-y-4">
+            <h2 className="font-display text-3xl font-bold leading-tight tracking-tight">
+              Join your team's HR portal.
+            </h2>
+            <p className="text-sm leading-relaxed text-primary-foreground/80">
+              Mark attendance, apply for leave, and keep your reports in one
+              place — without the spreadsheet shuffle.
+            </p>
+          </div>
+
+          <p className="relative text-xs text-primary-foreground/60">
+            © {new Date().getFullYear()} {APP_NAME}. Enterprise CRM &amp; HRMS.
+          </p>
         </div>
 
         {/* RIGHT SECTION */}
         <div className="flex flex-col items-center justify-center bg-background px-6 py-10 min-h-screen">
-          <div className="w-full max-sm:px-4 max-w-sm space-y-4">
+          <div className="w-full max-sm:px-4 max-w-sm space-y-6">
+            {/* Mobile brand */}
+            <div className="lg:hidden">
+              <Logo size="lg" />
+            </div>
             {/* Header */}
-            <div className="text-left space-y-1">
-              <p className="text-lg font-bold text-foreground">
+            <div className="text-left space-y-1.5">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
                 {t("signup.title")}
-              </p>
-              <p className="text-sm font-light text-foreground opacity-80">
+              </h1>
+              <p className="text-sm text-muted-foreground">
                 {t("signup.description")}
               </p>
             </div>
@@ -125,7 +158,7 @@ export default function SignupPage() {
                     disabled={isLoading}
                   />
                   {errors.firstName && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-destructive">
                       {errors.firstName.message}
                     </p>
                   )}
@@ -139,7 +172,7 @@ export default function SignupPage() {
                     disabled={isLoading}
                   />
                   {errors.lastName && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-destructive">
                       {errors.lastName.message}
                     </p>
                   )}
@@ -156,7 +189,7 @@ export default function SignupPage() {
                   disabled={isLoading}
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email.message}</p>
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
                 )}
               </div>
 
@@ -170,7 +203,7 @@ export default function SignupPage() {
                   disabled={isLoading}
                 />
                 {errors.phone && (
-                  <p className="text-sm text-red-500">{errors.phone.message}</p>
+                  <p className="text-sm text-destructive">{errors.phone.message}</p>
                 )}
               </div>
 
@@ -198,7 +231,7 @@ export default function SignupPage() {
                   )}
                 />
                 {errors.role && (
-                  <p className="text-sm text-red-500">{errors.role.message}</p>
+                  <p className="text-sm text-destructive">{errors.role.message}</p>
                 )}
               </div>
 
@@ -213,7 +246,7 @@ export default function SignupPage() {
                   disabled={isLoading}
                 />
                 {errors.password && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-destructive">
                     {errors.password.message}
                   </p>
                 )}
@@ -225,7 +258,7 @@ export default function SignupPage() {
                 <Button className="w-full" type="submit" disabled={isLoading}>
                   {isLoading ? (
                     <>
-                      <span className="mr-2 h-4 w-4 animate-spin">⚪</span>
+                      <Icons.spinner className="h-4 w-4 animate-spin" />
                       {t("signup.submitting")}
                     </>
                   ) : (

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
+import { AuthBrandPanel } from "@/components/auth-brand-panel";
 import { authService } from "@/services/auth.service";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -73,39 +74,35 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen w-full">
       <div className="flex min-h-screen flex-col lg:grid lg:grid-cols-2">
-        {/* LEFT SECTION */}
-        <div className="flex items-center justify-center gap-2 bg-primary text-white p-8 ">
-          <div className="size-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-xl shadow-[0px_1px_15px_-3px_rgba(255,_255,_255,_1)]">
-            A
-          </div>
-          <span className="text-2xl font-bold tracking-tight text-white">
-            Axoracomp
-          </span>
-        </div>
+        {/* LEFT SECTION — branded panel */}
+        <AuthBrandPanel
+          headline="Set a new password."
+          subline="Choose a strong password you don't use elsewhere. You'll be signed back in moments after."
+        />
 
         {/* RIGHT SECTION */}
         <div className="flex flex-col items-center justify-center bg-background px-6 py-10 min-h-screen">
-          <div className="w-full max-w-sm space-y-4">
+          <div className="w-full max-w-sm space-y-5">
             {/* Header */}
-            <div className="text-left space-y-1">
-              <p className="text-lg font-bold text-foreground">
+            <div className="text-left space-y-1.5">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
                 Reset Password
-              </p>
-              <p className="text-sm font-light text-foreground opacity-80">
+              </h1>
+              <p className="text-sm text-muted-foreground">
                 Enter your new password below.
               </p>
             </div>
 
             {/* Success Message */}
             {isSuccess && (
-              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <div className="rounded-lg border border-green/20 bg-greenBackground p-4">
                 <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-green" />
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-green-800">
+                    <p className="text-sm font-medium text-green">
                       Password changed successfully!
                     </p>
-                    <p className="text-xs text-green-700">
+                    <p className="text-xs text-green/80">
                       You will be redirected to the login page shortly.
                     </p>
                   </div>
@@ -115,16 +112,12 @@ export default function ResetPasswordPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="rounded-lg border border-destructive/20 bg-redBackground p-4">
                 <div className="flex gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                  <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-red-800">
-                      Error
-                    </p>
-                    <p className="text-xs text-red-700">
-                      {error}
-                    </p>
+                    <p className="text-sm font-medium text-destructive">Error</p>
+                    <p className="text-xs text-destructive/80">{error}</p>
                   </div>
                 </div>
               </div>
@@ -143,7 +136,7 @@ export default function ResetPasswordPage() {
                     disabled={isLoading}
                   />
                   {errors.password && (
-                    <p className="text-sm text-red-500">{errors.password.message}</p>
+                    <p className="text-sm text-destructive">{errors.password.message}</p>
                   )}
                 </div>
 
@@ -157,7 +150,7 @@ export default function ResetPasswordPage() {
                     disabled={isLoading}
                   />
                   {errors.confirmPassword && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-destructive">
                       {errors.confirmPassword.message}
                     </p>
                   )}

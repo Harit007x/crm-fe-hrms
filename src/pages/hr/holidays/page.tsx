@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Icons } from "@/components/icons";
+import { PageHeader } from "@/components/page-header";
+import { TableSkeleton } from "@/components/table-skeleton";
 import IconWrapper from "@/components/icons-wrapper";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -79,7 +81,7 @@ const ActionCell = ({ row, onRefresh }: { row: any, onRefresh: () => void }) => 
   return (
     <div className="w-fit flex gap-1">
       <IconWrapper
-        className="cursor-pointer text-blue hover:fill-blueBackground hover:bg-blueBackground"
+        className="cursor-pointer text-muted-foreground hover:bg-accent hover:text-foreground"
         onClick={() => {
           setTitle(holiday.title);
           setDate(holiday.date.split("T")[0]);
@@ -91,7 +93,7 @@ const ActionCell = ({ row, onRefresh }: { row: any, onRefresh: () => void }) => 
         <Icons.pencil className="h-4 w-4" />
       </IconWrapper>
       <IconWrapper
-        className="cursor-pointer text-red hover:fill-redBackground hover:bg-redBackground"
+        className="cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         onClick={() => setIsDeleteOpen(true)}
       >
         <Icons.trash className="h-4 w-4" />
@@ -151,7 +153,7 @@ const ActionCell = ({ row, onRefresh }: { row: any, onRefresh: () => void }) => 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red hover:bg-red/90 text-white">
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -284,9 +286,8 @@ export default function HRHolidaysPage() {
       accessorKey: "type",
       cell: ({ row }) => {
         const type = row.original.type || "Public";
-        let variant: "default" | "secondary" | "outline" = "default";
-        if (type === "Company") variant = "secondary";
-        else if (type === "Optional") variant = "outline";
+        const variant: "secondary" | "outline" | "ghost" =
+          type === "Company" ? "outline" : type === "Optional" ? "ghost" : "secondary";
         return <Badge variant={variant}>{type}</Badge>;
       },
     },
@@ -303,27 +304,27 @@ export default function HRHolidaysPage() {
   ], []);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Holiday Management</h2>
-          <p className="text-muted-foreground">Manage company-wide holidays and days off.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant={showAll ? "secondary" : "outline"} onClick={() => setShowAll(!showAll)}>
-            {showAll ? "View Upcoming Only" : "View All Holidays"}
-          </Button>
-          <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} align="end" />
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Icons.plus className="h-4 w-4 mr-2" /> Add Holiday
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Holiday Management"
+        description="Manage company-wide holidays and days off."
+        actions={
+          <>
+            <Button variant={showAll ? "secondary" : "outline"} onClick={() => setShowAll(!showAll)}>
+              {showAll ? "View Upcoming Only" : "View All Holidays"}
+            </Button>
+            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} align="end" />
+            <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+              <Icons.plus className="h-4 w-4" /> Add Holiday
+            </Button>
+          </>
+        }
+      />
 
-      <div className="bg-card border rounded-xl overflow-hidden shadow-sm p-4">
+      <div className="overflow-hidden rounded-xl border bg-card p-4 shadow-sm">
         <div className="mb-4 flex flex-col sm:flex-row gap-4 items-end flex-wrap">
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-xs text-muted-foreground mb-1 block">Search Holiday Name</label>
+          <div className="flex-1 min-w-[200px] space-y-1">
+            <Label className="text-xs text-muted-foreground">Search Holiday Name</Label>
             <Input
               type="text"
               placeholder="Search by title..."
@@ -331,8 +332,8 @@ export default function HRHolidaysPage() {
               onChange={(e) => setSearchName(e.target.value)}
             />
           </div>
-          <div className="w-[180px]">
-            <label className="text-xs text-muted-foreground mb-1 block">Holiday Type</label>
+          <div className="w-[180px] space-y-1">
+            <Label className="text-xs text-muted-foreground">Holiday Type</Label>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="All Types" />
@@ -351,9 +352,7 @@ export default function HRHolidaysPage() {
         </div>
 
         {loading ? (
-          <div className="flex h-32 items-center justify-center">
-            <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <TableSkeleton rows={6} columns={5} />
         ) : (
           <DataTable
             columns={columns}

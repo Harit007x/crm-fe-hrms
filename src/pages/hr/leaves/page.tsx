@@ -3,9 +3,13 @@ import { leaveService, type LeaveRecord } from "@/services/leave.service";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-column-header";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
+import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
+import { TableSkeleton } from "@/components/table-skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -38,10 +42,10 @@ const ActionCell = ({ row, onRefresh }: { row: any, onRefresh: () => void }) => 
 
   return (
     <div className="flex gap-2">
-      <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleUpdate("Approved")} disabled={loading}>
+      <Button size="sm" variant="outline" className="text-green hover:bg-greenBackground hover:text-green" onClick={() => handleUpdate("Approved")} disabled={loading}>
         <Icons.check className="w-4 h-4 mr-1" /> Approve
       </Button>
-      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleUpdate("Rejected")} disabled={loading}>
+      <Button size="sm" variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleUpdate("Rejected")} disabled={loading}>
         <Icons.x className="w-4 h-4 mr-1" /> Reject
       </Button>
     </div>
@@ -133,13 +137,7 @@ export default function HRLeavesPage() {
     {
       header: "Status",
       accessorKey: "status",
-      cell: ({ row }) => {
-        const status = row.original.status;
-        let variant: "blue" | "green" | "red" = "blue";
-        if (status === "Approved") variant = "green";
-        if (status === "Rejected") variant = "red";
-        return <Badge variant={variant as any}>{status}</Badge>;
-      },
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       id: "actions",
@@ -149,28 +147,25 @@ export default function HRLeavesPage() {
   ], []);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Leave Approvals</h2>
-          <p className="text-muted-foreground">Manage and review employee leave requests.</p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Leave Approvals"
+        description="Manage and review employee leave requests."
+      />
 
-      <div className="bg-card border rounded-xl overflow-hidden shadow-sm p-4">
+      <div className="overflow-hidden rounded-xl border bg-card p-4 shadow-sm">
         <div className="mb-4 flex flex-col sm:flex-row gap-4 items-end flex-wrap">
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-xs text-muted-foreground mb-1 block">Search Employee</label>
-            <input
+          <div className="flex-1 min-w-[200px] space-y-1">
+            <Label className="text-xs text-muted-foreground">Search Employee</Label>
+            <Input
               type="text"
               placeholder="Search by name..."
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
             />
           </div>
-          <div className="w-[180px]">
-            <label className="text-xs text-muted-foreground mb-1 block">Leave Category</label>
+          <div className="w-[180px] space-y-1">
+            <Label className="text-xs text-muted-foreground">Leave Category</Label>
             <Select value={leaveTypeFilter} onValueChange={setLeaveTypeFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="All Categories" />
@@ -184,8 +179,8 @@ export default function HRLeavesPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[180px]">
-            <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+          <div className="w-[180px] space-y-1">
+            <Label className="text-xs text-muted-foreground">Status</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="All Statuses" />
@@ -204,9 +199,7 @@ export default function HRLeavesPage() {
         </div>
 
         {loading ? (
-          <div className="flex h-32 items-center justify-center">
-            <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <TableSkeleton rows={6} columns={6} />
         ) : (
           <DataTable
             columns={columns}
